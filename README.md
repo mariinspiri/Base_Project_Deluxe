@@ -15,7 +15,7 @@ This project uses the following libraries:
 - [ParaView](https://www.paraview.org/) for visualizing simulation outputs
 
 ## INSTALLATION & RUNNING
-(The following steps are for Ubuntu)
+(NOTE: The following steps are meant for Ubuntu 24, with an other OS you might have to build the libraries from the source)
 
 Basic requirements:
 ```bash
