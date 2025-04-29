@@ -56,9 +56,6 @@ void Field::setup(double dt, double diffusion_coefficient, double decay_coeffici
         reaction_diffusion_matrix += tmp2;
     }
     // set the operator: to solve the linear system we use Conjugate Gradient with Gauss-Seidel's preconditioner
-    preconditioner.SetOperator(reaction_diffusion_matrix);
-    solver.SetOperator(reaction_diffusion_matrix);
-    solver.SetPreconditioner(preconditioner);
     solver.SetRelTol(1e-8);
     solver.SetMaxIter(50);
     solver.SetPrintLevel(0);
@@ -184,9 +181,8 @@ void Field::computeSinksAndBindReceptors(double dt, std::vector<Agent> &agents) 
 
 }
 
-/*
-// alternative scheme with only lagged A:
 
+// implicit sinks/ explicit sources
 void Field::step(double dt) {
     // now we assemble the lhs:
     mfem::SparseMatrix lhs_matrix = reaction_diffusion_matrix;
@@ -196,9 +192,6 @@ void Field::step(double dt) {
     preconditioner.SetOperator(lhs_matrix);
     solver.SetOperator(lhs_matrix);
     solver.SetPreconditioner(preconditioner);
-    solver.SetRelTol(1e-8);
-    solver.SetMaxIter(50);
-    solver.SetPrintLevel(0);
 
     mfem::Vector rhs_vector(mass_matrix.Height());
 
@@ -209,8 +202,8 @@ void Field::step(double dt) {
     // run Backward-Euler and overwrite field:
     solver.Mult(rhs_vector, field);
 }
-*/
 
+/* ALTERNATIVE SCHEME: explicit sinks and sources (less robust for relavant scenarios)
 void Field::step(double dt) {
     mfem::Vector rhs_vector(mass_matrix.Height());
 
@@ -225,3 +218,4 @@ void Field::step(double dt) {
     // run Backward-Euler and overwrite field:
     solver.Mult(rhs_vector, field);
 }
+*/
