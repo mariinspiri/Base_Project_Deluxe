@@ -230,6 +230,8 @@ void Agent::computeNewBPRWVelocity(double p_follow_gradient, double angle) {
         //else you exit and rotate to random angle:
     }
 
+    // reset cumulative gradient:
+    cumulative_gradient = {0., 0., 0.};
     gc_local_velocity_direction = gc_local_velocity_direction.rotate(angle);
 }
 
