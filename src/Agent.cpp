@@ -202,7 +202,7 @@ void Agent::stepLigandReceptors(double dt) {
     // integrate the ODE:
     double d_R_concentration = k_recycled*R_star_concentration - newly_bound_receptors;
     double d_LR_concentration = newly_bound_receptors - k_internalized*LR_concentration;
-    double d_R_star_concentration = k_internalized*LR_concentration - k_recycled*LR_concentration;
+    double d_R_star_concentration = k_internalized*LR_concentration - k_recycled*R_star_concentration;
 
     R_concentration += dt*d_R_concentration;
     LR_concentration += dt*d_LR_concentration;
