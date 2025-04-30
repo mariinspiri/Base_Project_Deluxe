@@ -44,17 +44,9 @@ void Field::setup(double dt, double diffusion_coefficient, double decay_coeffici
     // I define the reaction diffusion matrix as (M + dt*(D*K + \lambda M))
     // this matrix remains constant for the whole simulation...
     reaction_diffusion_matrix = mass_matrix;
-    {
-        // diffusion:
-        mfem::SparseMatrix tmp1(stiffness_matrix);
-        tmp1 *= dt*diffusion_coefficient;
-        reaction_diffusion_matrix += tmp1;
+    reaction_diffusion_matrix.Add(dt*diffusion_coefficient, stiffness_matrix);
+    reaction_diffusion_matrix.Add(dt*decay_coefficient, mass_matrix);
 
-        // decay:
-        mfem::SparseMatrix tmp2(mass_matrix);
-        tmp2 *= dt*decay_coefficient;
-        reaction_diffusion_matrix += tmp2;
-    }
     // set the operator: to solve the linear system we use Conjugate Gradient with Gauss-Seidel's preconditioner
     solver.SetRelTol(1e-8);
     solver.SetMaxIter(50);
