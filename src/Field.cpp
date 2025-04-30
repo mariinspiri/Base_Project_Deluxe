@@ -114,7 +114,7 @@ void Field::computeSinksAndBindReceptors(double dt, std::vector<Agent> &agents) 
 
         auto covered_elements = agent.findFacesWithinRadius();
         double radius = agent.getAgentRadius();
-        double alpha_m = agent.k_binding*agent.getFreeReceptors()/(M_PI*radius*radius);
+        double area = 0.0; // we will calculate the "covered" area which is normally a bit bigger than the actual area...
 
         // variables to update the agent:
         double newly_bound_receptors = 0.0;
@@ -133,8 +133,11 @@ void Field::computeSinksAndBindReceptors(double dt, std::vector<Agent> &agents) 
 
             // Field -> Agent interaction:
             // calculate the locally bound receptors
-            double Q = alpha_m * space->gc_geometry->faceArea(element) * field.GetValue(element_idx, {1./3., 1./3., 1./3.});
-            newly_bound_receptors += Q;
+            double element_area = space->gc_geometry->faceArea(element);
+            area += element_area;
+
+            double ligand = space->gc_geometry->faceArea(element) * field.GetValue(element_idx, {1./3., 1./3., 1./3.});
+            if (!std::isinf(ligand)) {newly_bound_receptors += ligand;}
 
             // calculate the gradient (in global coordinates):
             mfem::ElementTransformation* trans = space->mfem_mesh->GetElementTransformation(element_idx);
@@ -144,6 +147,8 @@ void Field::computeSinksAndBindReceptors(double dt, std::vector<Agent> &agents) 
             for (int d =0;d != 3;d++){average_gradient[d] += gradient[d];}
         }
         average_gradient /= covered_elements.size();
+        double alpha_m = agent.k_binding*agent.getFreeReceptors()/area;
+        newly_bound_receptors *= alpha_m;
 
         // save the bound receptors in the agent, with the average gradient:
         agent.updateLigandReceptors(newly_bound_receptors, average_gradient);

@@ -199,7 +199,9 @@ void Agent::stepLigandReceptors(double dt) {
         cumulative_gradient += (diff_LR/avg_gradient_norm)*newly_average_gradient;
     }
 
-    // integrate the ODE:
+    // Ensure stability:
+    if (dt*newly_bound_receptors < R_concentration)newly_bound_receptors = R_concentration/dt;
+
     double d_R_concentration = k_recycled*R_star_concentration - newly_bound_receptors;
     double d_LR_concentration = newly_bound_receptors - k_internalized*LR_concentration;
     double d_R_star_concentration = k_internalized*LR_concentration - k_recycled*R_star_concentration;
@@ -208,13 +210,6 @@ void Agent::stepLigandReceptors(double dt) {
     LR_concentration += dt*d_LR_concentration;
     R_star_concentration += dt*d_R_star_concentration;
 
-    // we want to conserve the sum, in general if you integrate with forward Euler you might have a very slow decay...
-    // hence we always project back onto the plane where the limit cycle lies:
-    // NOTE: if the integrator was perfect, the projection would do nothing...
-    double projection = ((R_concentration+LR_concentration+R_star_concentration) - total_concentration_sum)/3;
-    R_concentration = R_concentration - projection;
-    LR_concentration = LR_concentration - projection;
-    R_star_concentration = R_star_concentration - projection;
 }
 
 void Agent::computeNewBPRWVelocity(double p_follow_gradient, double angle) {
