@@ -18,18 +18,16 @@ using namespace std;
 using namespace geometrycentral::surface;
 
 int main(int argc, char *argv[]) {
-    //std::random_device rd;
-    std::mt19937 gen(91);
-
-    std::uniform_real_distribution<double> unif_dist(0.0, 1);
-
     auto time_start = std::chrono::high_resolution_clock::now();
 
     // load mesh and declare space
     string mesh_file("plane_mesh");
-    Space space("../input/mesh/"+mesh_file+".stl");
+    Space space("../input/mesh/"+mesh_file+".stl", 91);
 
     int n_of_elements = space.gc_mesh->nFaces();
+
+    // uniform distribution [0, 1]
+    std::uniform_real_distribution<double> unif_dist(0.0, 1);
 
     vector<Agent> agents;
     // Agents initialization:
@@ -45,14 +43,14 @@ int main(int argc, char *argv[]) {
 
         for (int i = 0;i < num_good_cells;i++) {
             // random face, in the center of the triangle:
-            Face face = space.gc_mesh->face(static_cast<int>(n_of_elements * unif_dist(gen)));
+            Face face = space.gc_mesh->face(static_cast<int>(n_of_elements * unif_dist(space.gen)));
             SurfacePoint initial_position(face, {1./3., 1./3., 1./3.});
 
             Agent agent(&space, initial_position, radius_good_cells,
                                             agent_id_counter,
                                             AGENT_TYPE_GOOD_CELL,
                                             persistence_time,
-                                            persistence_time*unif_dist(gen)); //initial phase-lag
+                                            persistence_time*unif_dist(space.gen)); //initial phase-lag
             agent.setLocalVelocity({speed_good_cells, 0});
             agents.push_back(agent);
             ++agent_id_counter;
@@ -63,7 +61,7 @@ int main(int argc, char *argv[]) {
         double evil_radius {0.05};
 
         for (int i = 0; i < num_evil_cell; i++) {
-            Face face = space.gc_mesh->face(static_cast<int>(n_of_elements*unif_dist(gen)));
+            Face face = space.gc_mesh->face(static_cast<int>(n_of_elements*unif_dist(space.gen)));
             SurfacePoint initial_position(face, {1./3., 1./3., 1./3.});
 
             Agent agent(&space, initial_position, evil_radius,
@@ -99,7 +97,7 @@ int main(int argc, char *argv[]) {
         cout<<" step:"<<i<<" time:"<<(i*dt)<<endl;
 
         // shuffle the agents:
-        std::shuffle(agents.begin(), agents.end(), gen);
+        std::shuffle(agents.begin(), agents.end(), space.gen);
 
         // AGENTS DYNAMIC:
         for (auto &agent : agents) {
@@ -107,9 +105,9 @@ int main(int argc, char *argv[]) {
             if (agent.getAgentType() == AGENT_TYPE_GOOD_CELL) {
                 agent.move(dt);
 
-                // calling the persistence timer updates the internal one
+                // calling the persistence timer updates the internal one - returns true and reset itself when it reaches 0
                 if (agent.persistenceTimer(dt)){
-                    agent.computeNewBPRWVelocity(unif_dist(gen), 2*M_PI*unif_dist(gen));
+                    agent.computeNewBPRWVelocity();
                 }
             }
         }
@@ -133,8 +131,7 @@ int main(int argc, char *argv[]) {
             utils::saveAgentsPositionToFile(&space, agents,
                                             "../output/" + mesh_file + "_agents_disks_step_" + std::to_string(file_index) + ".vtk");
 
-            //utils::saveAgentsFacesToFile(&space, agents,
-            //                                "../output/" + mesh_file + "_agents_faces_step_" + std::to_string(file_index) + ".vtk");
+            //utils::saveAgentsFacesToFile(&space, agents, "../output/" + mesh_file + "_agents_faces_step_" + std::to_string(file_index) + ".vtk");
 
             utils::saveFieldToFile(&space, chemokines,
                                     "../output/"+ mesh_file + "_field_step_"+ std::to_string(file_index)+ ".vtk", "chemokines");

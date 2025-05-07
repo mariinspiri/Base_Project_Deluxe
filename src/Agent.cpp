@@ -212,8 +212,14 @@ void Agent::stepLigandReceptors(double dt) {
 
 }
 
-void Agent::computeNewBPRWVelocity(double p_follow_gradient, double angle) {
+void Agent::computeNewBPRWVelocity() {
+    // define Unif([0,1])
+    std::uniform_real_distribution<double> uniform_dist(0.0, 1.0);
+
+    // Like in Pollmächer's paper:
     double gradient_following_prob = cumulative_gradient.norm()*sensitivity_to_gradient;
+
+    double p_follow_gradient = uniform_dist(space->gen);
 
     if (p_follow_gradient < gradient_following_prob) {
         Vector2 new_gradient_direction;
@@ -232,6 +238,9 @@ void Agent::computeNewBPRWVelocity(double p_follow_gradient, double angle) {
 
     // reset cumulative gradient:
     cumulative_gradient = {0., 0., 0.};
+
+    // select a random angle:
+    double angle = (2 * M_PI)*uniform_dist(space->gen);
     gc_local_velocity_direction = gc_local_velocity_direction.rotate(angle);
 }
 

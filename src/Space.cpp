@@ -9,7 +9,7 @@ using namespace std;
 using namespace geometrycentral;
 using namespace geometrycentral::surface;
 
-Space::Space(std::string gc_mesh_file_name) {
+Space::Space(std::string gc_mesh_file_name, int seed):gen(seed) {
     loadGCMeshFromFile(gc_mesh_file_name);
     createMFEMMeshFromGC();
 }

@@ -117,15 +117,6 @@ void utils::saveAgentsPositionToFile(Space* space, std::vector<Agent>& agents, s
     // Each point has the unique index as a marker
     vtk_file << "CELL_DATA " << total_polygons << "\n";
 
-    vtk_file << "SCALARS agent_id int 1\n";
-    vtk_file << "LOOKUP_TABLE default\n";
-    for (int i = 0; i < num_agents; i++) {
-        int current_id = agents[i].getAgentId();
-        for (int seg = 0; seg < num_of_segments_for_cirlce; seg++) {
-            vtk_file << current_id << "\n";
-        }
-    }
-
     // save agent types for visualization
     vtk_file << "SCALARS agent_type int 1\n";
     vtk_file << "LOOKUP_TABLE default\n";
@@ -135,6 +126,16 @@ void utils::saveAgentsPositionToFile(Space* space, std::vector<Agent>& agents, s
             vtk_file << current_type << "\n";
         }
     }
+
+    vtk_file << "SCALARS agent_id int 1\n";
+    vtk_file << "LOOKUP_TABLE default\n";
+    for (int i = 0; i < num_agents; i++) {
+        int current_id = agents[i].getAgentId();
+        for (int seg = 0; seg < num_of_segments_for_cirlce; seg++) {
+            vtk_file << current_id << "\n";
+        }
+    }
+
     vtk_file.close();
 }
 void utils::saveAgentsFacesToFile(Space* space,std::vector<Agent>& agents,std::string file_name){

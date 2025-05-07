@@ -30,8 +30,8 @@ public:
     // updates the internal time, returns true if timer reached 0
     bool persistenceTimer(double dt);
 
-    // rotate the internal velocity by <angle> or follow the gradient
-    void computeNewBPRWVelocity(double p_follow_gradient, double angle);
+    // randomly rotate the internal velocity or follow the gradient
+    void computeNewBPRWVelocity();
 
     // converts a global velocity into local one and stores the value
     void setLocalVelocity(std::vector<double> velocity);

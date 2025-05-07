@@ -14,10 +14,9 @@
 // This class is essentially a container for all the shared data structures: GC's mesh and geometry, MFEM's mesh and functional space...
 class Space {
 public:
-    Space();
+    // this constructor uploads the mesh file into GC's mesh and MFEM's one + declares the unique random generator used through out all of the simulation
+    Space(std::string gc_mesh_file_name, int seed);
     ~Space();
-    // this constructor uploads the mesh file into GC's mesh and MFEM's one
-    Space(std::string gc_mesh_file_name);
 
     // loads mesh from file ".stl" format, and declares gc_mesh/gc_geometry
     void loadGCMeshFromFile(std::string filename);
@@ -44,6 +43,8 @@ public:
     // functional space used to do FEM on the fields
     mfem::FiniteElementCollection* finite_element_collection;    // Type of bump functions (H1, DG, etc.)
     mfem::FiniteElementSpace* finite_element_space;
+
+    std::mt19937 gen;
 
 private:
     // dimensions
