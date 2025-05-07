@@ -7,8 +7,7 @@
 
 using namespace std;
 
-CollisionManager::CollisionManager(Space* s): space(s), occupation_matrix(s->gc_mesh->nFaces(),0),
-                                                rng(std::random_device()()), dist_01(0.0, 1.0), heat_solver(*space->gc_geometry){}
+CollisionManager::CollisionManager(Space* s): space(s), occupation_matrix(s->gc_mesh->nFaces(),0), dist_01(0.0, 1.0), heat_solver(*space->gc_geometry){}
 
 void CollisionManager::checkCollisions(std::vector<Agent> agents) {
     // re-set occupation matrix:
@@ -127,7 +126,7 @@ bool CollisionManager::fixCollisions(std::vector<Agent>& agents) {
             //else agent_2.gc_local_velocity_direction = -resolution_velocities[collision][1].normalize();
 
             // phagocytose:
-            if (float p = dist_01(rng); p < REMOVAL_PROBABILITY) {
+            if (float p = dist_01(space->gen); p < REMOVAL_PROBABILITY) {
                 if (agent_1.getAgentType() < 0) {
                     agent_index_killing_list.insert(agent_1.getAgentId());
                 }else agent_index_killing_list.insert(agent_2.getAgentId());

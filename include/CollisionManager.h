@@ -25,7 +25,6 @@ private:
     std::map<std::pair<int, int>, double> resolution_lengths;
 
     geometrycentral::surface::VectorHeatMethodSolver heat_solver;
-    std::mt19937 rng;
     std::uniform_real_distribution<double> dist_01;
 };
 
