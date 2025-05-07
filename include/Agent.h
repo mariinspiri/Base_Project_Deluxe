@@ -72,7 +72,7 @@ private:
     double persistence_timer{1.0};
 
     // Ligand-Receptor Dynamics:
-    double total_concentration_sum{1e2};
+    double total_concentration_sum{1e3};
 
     double R_concentration{total_concentration_sum};
     double LR_concentration{0};
