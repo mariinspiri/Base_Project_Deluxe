@@ -84,7 +84,7 @@ int main(int argc, char *argv[]) {
 
     double D {0.01};        // Diffusion coefficient
     double lambda  {0.01};   // Reaction/decay rate
-    double S_0 {1};         // source intensity (NOTE: in the PDE it should scale with the area e.g. (S_0/Area), here is simply fixed)
+    double S_0 {1};         // source intensity (NOTE: in the PDE it should scale with the area e.g. (S_0/Area), so it would be like having S_0=|E|^-1)
 
     // initialize the chemokines' scalar field
     Field chemokines(&space);
