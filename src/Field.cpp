@@ -111,9 +111,23 @@ void Field::computeSinksAndBindReceptors(double dt, std::vector<Agent> &agents) 
     for (auto &agent: agents) {
         if (agent.getAgentType() < 0) {continue;}
         // only good agents:
-
-        auto covered_elements = agent.findFacesWithinRadius();
         double radius = agent.getAgentRadius();
+        geometrycentral::Vector3 agent_position = agent.getGlobalPosition();
+
+        std::unordered_set<geometrycentral::surface::Face> covered_elements;
+        // filter out non-covered faces:
+        for (auto face :  agent.findFacesWithinRadius()) {
+            geometrycentral::Vector3 center_of_mass(0.0, 0.0, 0.0);
+            for (auto vert : face.adjacentVertices()) {
+                center_of_mass += space->gc_geometry->inputVertexPositions[vert];
+            }
+            center_of_mass /= 3;
+
+            if ((center_of_mass - agent_position).norm() <= radius) {
+                covered_elements.insert(face);
+            }
+        }
+
         double area = 0.0; // we will calculate the "covered" area which is normally a bit bigger than the actual area...
 
         // variables to update the agent:
@@ -147,7 +161,8 @@ void Field::computeSinksAndBindReceptors(double dt, std::vector<Agent> &agents) 
             for (int d =0;d != 3;d++){average_gradient[d] += gradient[d];}
         }
         average_gradient /= covered_elements.size();
-        double alpha_m = agent.k_binding*agent.getFreeReceptors()/area;
+
+        double alpha_m = agent.k_binding*agent.getFreeReceptors()/(M_PI * radius * radius);
         newly_bound_receptors *= alpha_m;
 
         // save the bound receptors in the agent, with the average gradient:
