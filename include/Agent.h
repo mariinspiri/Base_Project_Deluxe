@@ -54,7 +54,7 @@ public:
     double k_binding{0.01};
     double k_internalized{0.07};
     double k_recycled{0.05};
-    double sensitivity_to_gradient{5*1e1}; // what in Pollmächer is sigma
+    double sensitivity_to_gradient{5*1e2}; // what in Pollmächer is sigma
 
 private:
     // Pointer to the belonging space:
