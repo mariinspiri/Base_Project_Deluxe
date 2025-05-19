@@ -193,8 +193,24 @@ void Field::computeSinksAndBindReceptors(double dt, std::vector<Agent> &agents) 
 
 }
 
+// IMEX SCHEME: explicit sinks and sources
+void Field::step(double dt) {
+    mfem::Vector rhs_vector(mass_matrix.Height());
 
-// implicit sinks/ explicit sources
+    // assemble the r.h.s. in this case: M*c + dt*F
+    mass_matrix.Mult(field, rhs_vector);
+    rhs_vector.Add(dt, source_term);
+
+    mfem::Vector sink_term(mass_matrix.Height());
+    sink_matrix.Mult(field, sink_term);
+
+    rhs_vector.Add(-dt, sink_term);
+    // run Backward-Euler and overwrite field:
+    solver.Mult(rhs_vector, field);
+}
+
+/*
+// ALTERNATIVE IMEX scheme (implicit sinks/ explicit sources)
 void Field::step(double dt) {
     // now we assemble the lhs:
     mfem::SparseMatrix lhs_matrix = reaction_diffusion_matrix;
@@ -214,20 +230,5 @@ void Field::step(double dt) {
     // run Backward-Euler and overwrite field:
     solver.Mult(rhs_vector, field);
 }
-
-/* ALTERNATIVE SCHEME: explicit sinks and sources (less robust for relavant scenarios)
-void Field::step(double dt) {
-    mfem::Vector rhs_vector(mass_matrix.Height());
-
-    // assemble the r.h.s. in this case: M*c + dt*F
-    mass_matrix.Mult(field, rhs_vector);
-    rhs_vector.Add(dt, source_term);
-
-    mfem::Vector sink_term(mass_matrix.Height());
-    sink_matrix.Mult(field, sink_term);
-
-    rhs_vector.Add(-dt, sink_term);
-    // run Backward-Euler and overwrite field:
-    solver.Mult(rhs_vector, field);
-}
 */
+
