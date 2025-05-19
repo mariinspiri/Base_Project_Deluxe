@@ -48,6 +48,10 @@ void Field::setup(double dt, double diffusion_coefficient, double decay_coeffici
     reaction_diffusion_matrix.Add(dt*decay_coefficient, mass_matrix);
 
     // set the operator: to solve the linear system we use Conjugate Gradient with Gauss-Seidel's preconditioner
+    preconditioner.SetOperator(reaction_diffusion_matrix);
+    solver.SetOperator(reaction_diffusion_matrix);
+    solver.SetPreconditioner(preconditioner);
+
     solver.SetRelTol(1e-8);
     solver.SetMaxIter(50);
     solver.SetPrintLevel(0);
