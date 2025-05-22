@@ -43,6 +43,7 @@ git clone --recurse-submodules https://github.com/nmwsharp/geometry-central.git 
 mkdir build && cd build
 cmake ..
 make -j4
+sudo make install #to install the library in /usr/local/include
 ```
 
 Compile Base_Project_Deluxe:
