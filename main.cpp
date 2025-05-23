@@ -9,10 +9,7 @@
 #include "include/CollisionManager.h"
 #include "include/Field.h"
 #include "include/Space.h"
-
-// NOTE-CONVENTION: good cells are positive, bad one ar negative as obvious
-#define AGENT_TYPE_GOOD_CELL +1
-#define AGENT_TYPE_EVIL_CELL -1
+#include "include/AgentTypes.h"
 
 using namespace std;
 using namespace geometrycentral::surface;
@@ -35,8 +32,30 @@ int main(int argc, char *argv[]) {
         // agents will contain every type of agent
         int agent_id_counter {1};
 
+        // initialize the best cells
+        
+        int num_best_cells {5};
+        double persistence_best_time {2};
+        double radius_best_cells {0.1};
+        double speed_best_cells {0.5};
+
+        for (int i = 0;i < num_best_cells;i++) {
+            // random face, in the center of the triangle:
+            Face face = space.gc_mesh->face(static_cast<int>(n_of_elements * unif_dist(space.gen)));
+            SurfacePoint initial_position(face, {1./3., 1./3., 1./3.});
+
+            Agent agent(&space, initial_position, radius_best_cells,
+                                            agent_id_counter,
+                                            AGENT_TYPE_BEST_CELL,
+                                            persistence_best_time,
+                                            persistence_best_time*unif_dist(space.gen)); //initial phase-lag
+            agent.setLocalVelocity({speed_best_cells, 0});
+            agents.push_back(agent);
+            ++agent_id_counter;
+        }
+        
         // initialize good cells:
-        int num_good_cells {10};
+        int num_good_cells {5};
         double persistence_time {2};
         double radius_good_cells {0.2};
         double speed_good_cells {0.2};
@@ -102,14 +121,7 @@ int main(int argc, char *argv[]) {
         // AGENTS DYNAMIC:
         for (auto &agent : agents) {
             // NOTE: I chose to put the calls directly here, but you can think of implementing a agent.doStep(dt) function to make the main cleaner
-            if (agent.getAgentType() == AGENT_TYPE_GOOD_CELL) {
-                agent.move(dt);
-
-                // calling the persistence timer updates the internal one - returns true and reset itself when it reaches 0
-                if (agent.persistenceTimer(dt)){
-                    agent.computeNewBPRWVelocity();
-                }
-            }
+            agent.doStep(dt);
         }
 
         // CHECK "COLLISIONS" (INTERACTIONS OF ALL SORTS):

@@ -24,6 +24,8 @@ public:
     geometrycentral::Vector3 getGlobalVelocity();
     geometrycentral::Vector3 getGlobalPosition();
 
+    void doStep(double dt);
+
     // move the agent along geodesics, if use_speed uses also the previously saved speed, otherwise sets to 1
     int move(double dt, bool use_speed=true, int recursion_index=0);
 
