@@ -2,6 +2,8 @@
 #include <chrono>
 #include <iostream>
 #include <geometrycentral/surface/manifold_surface_mesh.h>
+#include <utility>
+#include <cstdlib> 
 
 #include "include/utils.h"
 
@@ -14,7 +16,7 @@
 using namespace std;
 using namespace geometrycentral::surface;
 
-int main(int argc, char *argv[]) {
+float calculateClearanceTime(int num_best_cells, int num_good_cells, int id_sim){
     auto time_start = std::chrono::high_resolution_clock::now();
 
     // load mesh and declare space
@@ -34,10 +36,9 @@ int main(int argc, char *argv[]) {
 
         // initialize the best cells
         
-        int num_best_cells {5};
         double persistence_best_time {2};
-        double radius_best_cells {0.1};
-        double speed_best_cells {0.5};
+        double radius_best_cells {0.15};
+        double speed_best_cells {0.8};
 
         for (int i = 0;i < num_best_cells;i++) {
             // random face, in the center of the triangle:
@@ -55,7 +56,6 @@ int main(int argc, char *argv[]) {
         }
         
         // initialize good cells:
-        int num_good_cells {5};
         double persistence_time {2};
         double radius_good_cells {0.2};
         double speed_good_cells {0.2};
@@ -98,7 +98,7 @@ int main(int argc, char *argv[]) {
         collision_manager.fixCollisions(agents);
     }
 
-    double T {60};          // minutes
+    double T {130};          // minutes
     double dt {0.1};        // minutes
 
     double D {0.01};        // Diffusion coefficient
@@ -113,20 +113,30 @@ int main(int argc, char *argv[]) {
     int file_index {0};
 
     for (int i = 0; i < static_cast<int>(T/dt); i++) {
-        cout<<" step:"<<i<<" time:"<<(i*dt)<<endl;
-
         // shuffle the agents:
         std::shuffle(agents.begin(), agents.end(), space.gen);
 
         // AGENTS DYNAMIC:
         for (auto &agent : agents) {
-            // NOTE: I chose to put the calls directly here, but you can think of implementing a agent.doStep(dt) function to make the main cleaner
             agent.doStep(dt);
         }
 
         // CHECK "COLLISIONS" (INTERACTIONS OF ALL SORTS):
         collision_manager.checkCollisions(agents);
         bool agents_list_updated = collision_manager.fixCollisions(agents);
+
+        //chack if clearance time was reached
+        int evil_cell_count = 0;
+        for(int j = 0; j < agents.size(); j++){
+            if(agents[j].getAgentType() == AGENT_TYPE_EVIL_CELL){
+                evil_cell_count++;
+            }
+        }
+        if(evil_cell_count <= 0){
+            return i*dt;
+        }
+
+        cout<<"best:" << num_best_cells << " step:"<<i<<" time:"<<(i*dt)<< " evil_cells: "<< evil_cell_count <<endl;
 
         // UPDATE THE CHEMOKINES:
         // update the source term if some evil cells were actually removed
@@ -137,6 +147,8 @@ int main(int argc, char *argv[]) {
         // update the sinks and save inside the amount of bound receptors inside of the good agents (along with the current average gradient)
         chemokines.computeSinksAndBindReceptors(dt, agents);
         chemokines.step(dt);
+
+        
 
         // visualizations:
         if (i % 1 == 0){
@@ -150,12 +162,47 @@ int main(int argc, char *argv[]) {
 
             ++file_index;
         }
+        
     }
+
 
     auto time_end = std::chrono::high_resolution_clock::now();
     auto time_duration = std::chrono::duration_cast<std::chrono::milliseconds>(time_end - time_start).count()/1000;
 
     // Print the execution time
     std::cout << "Execution time: " << time_duration << " s" << std::endl;
+
+    //if clearance time was not reached
+        return -1;
+}
+
+int main(int argc, char *argv[]) {
+    //num_cells consist of num_best and num_good
+    std::vector<std::pair<int,int>> num_cells = {
+        {0, 10},
+        {2, 8},
+        {5, 5},
+        {8, 2},
+        {10, 0}
+    };
+
+    std::vector<SimulationResult> results;
+    int id_sim {0};
+
+    //run simulation several times and get clearance time as a return parameter
+    for (const auto& num : num_cells) {
+        for(int i = 0; i < 2; i++){
+            float clearance_time = calculateClearanceTime(num.first, num.second, id_sim);
+            results.push_back({id_sim, num.first, num.second, clearance_time});
+            id_sim++;
+        }
+    }
+    //save clearance time to the .csv file and save plotted diagram in output 
+    utils::saveClearanceTimesToFile(results, "../output/clearance_times.csv");
+    int plot = system("python3 ../script/plot_stats.py");
+    if (plot != 0){
+        std::cerr<< "Error: Python script failed to run.\n";
+    }
+    
     return 0;
 }
