@@ -18,7 +18,6 @@ struct SimulationResult {
 namespace utils {
     void saveAgentsPositionToFile(Space* space,std::vector<Agent>& agents, std::string file_name);
     void saveAgentsFacesToFile(Space* space, std::vector<Agent>& agents, std::string file_name);
-
     void saveFieldToFile(Space* space, Field& field, std::string file_name, std::string field_name="scalar field");
     void saveClearanceTimesToFile(const std::vector<SimulationResult>& results, const std::string &filename);
 }
