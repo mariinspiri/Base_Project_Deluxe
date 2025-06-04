@@ -4,6 +4,7 @@
 #include <queue>
 
 #include "../include/Agent.h"
+#include "../include/AgentTypes.h"
 
 using namespace std;
 using namespace geometrycentral;
@@ -35,6 +36,16 @@ Agent::Agent(Space *s, SurfacePoint &initial_position, double agent_radius, int 
     gc_position = initial_position;
 }
 
+void Agent::doStep(double dt){
+    if (getAgentType() == AGENT_TYPE_GOOD_CELL||getAgentType() == AGENT_TYPE_BEST_CELL) {
+            move(dt);
+
+            // calling the persistence timer updates the internal one - returns true and reset itself when it reaches 0
+            if (persistenceTimer(dt)){
+                computeNewBPRWVelocity();
+            }
+        }
+    } 
 int Agent::move(double dt, bool use_speed, int recursion_index) {
     // safeguard against infinite-loops:
     if (recursion_index > 1e2) {

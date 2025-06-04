@@ -3,10 +3,10 @@
 //
 #include "../include/utils.h"
 #include "../include/Agent.h"
+#include "../include/utils.h"
 
 #define NORMAL_SHIFT +0.02
 // NOTE: if you want to have the agents "inside" the surface use -0.02
-
 
 // Euler rotation formula:
 geometrycentral::Vector3 rotateVector(geometrycentral::Vector3 point, geometrycentral::Vector3 center, geometrycentral::Vector3 rotation_axis, double rotation_angle) {
@@ -249,4 +249,25 @@ void utils::saveFieldToFile(Space* space, Field& field, std::string file_name, s
     output_file.close();
 }
 
+void utils::saveClearanceTimesToFile(const std::vector<SimulationResult>& results, const std::string &filename)
+{
+    std::ofstream file(filename);
 
+    if (!file) {
+        std::cerr << "Error: Could not open file " << filename << " for writing.\n";
+        return;
+    }
+
+    file << "simulation_id, number_best, number_good, clearance_time\n";
+    file << std::fixed << std::setprecision(1);
+    
+    for (size_t i = 0; i < results.size(); ++i) {
+        const SimulationResult& res = results[i];
+        file << res.simulation_index << "," 
+             << res.num_best_cells << ","
+             << res.num_good_cells << ","
+             << res.clearance_time << "\n";
+    }
+
+    file.close();
+}

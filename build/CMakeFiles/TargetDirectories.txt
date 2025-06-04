@@ -1,0 +1,3 @@
+/home/marie/Projects/work/Base_Project_Deluxe/build/CMakeFiles/Base_Project_Deluxe.dir
+/home/marie/Projects/work/Base_Project_Deluxe/build/CMakeFiles/edit_cache.dir
+/home/marie/Projects/work/Base_Project_Deluxe/build/CMakeFiles/rebuild_cache.dir
