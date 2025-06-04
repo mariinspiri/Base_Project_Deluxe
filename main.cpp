@@ -209,7 +209,7 @@ double computeDiffusionCoefFromMSD(const std::vector<float>& msd, float dt) {
 }
 
 //compute MSD from simulation
-double calculateDiffusionCoef(int num_good_cells){
+double calculateDiffusionCoef(int num_good_cells, double persistence_time, double speed_good_cells){
     auto time_start = std::chrono::high_resolution_clock::now();
 
     // load mesh and declare space
@@ -228,9 +228,9 @@ double calculateDiffusionCoef(int num_good_cells){
         int agent_id_counter {1};
 
         // initialize good cells:
-        double persistence_time {2};
+        //double persistence_time {2};
         double radius_good_cells {0.2};
-        double speed_good_cells {0.2};
+        //double speed_good_cells {0.2};
 
         for (int i = 0;i < num_good_cells;i++) {
             // random face, in the center of the triangle:
@@ -256,7 +256,7 @@ double calculateDiffusionCoef(int num_good_cells){
         collision_manager.fixCollisions(agents);
     }
 
-    double T {4};          // minutes
+    double T {60};          // minutes
     double dt {0.1};        // minutes
 
     double D {0.01};        // Diffusion coefficient
@@ -325,15 +325,45 @@ double calculateDiffusionCoef(int num_good_cells){
     auto time_duration = std::chrono::duration_cast<std::chrono::milliseconds>(time_end - time_start).count()/1000;
 
     // Print the execution time
-    std::cout << "Execution time: " << time_duration << " s" << std::endl;
+    //std::cout << "Execution time: " << time_duration << " s" << std::endl;
 
     double diffCoeff = computeDiffusionCoefFromMSD(msd, dt);
     return diffCoeff;
 }
 
 int main(int argc, char *argv[]) {
-    double diffCoeff = calculateDiffusionCoef(10);
+    /*double diffCoeff = calculateDiffusionCoef(10);
     std::cout<<"Diffusion coefficient: "<<diffCoeff<<std::endl;
+    */
+    std::vector<double> values_persistence_time = {0.1, 0.5, 1.0, 2.0, 5.0, 10.0};
+    std::vector<double> values_speed = {0.05, 0.1, 0.2, 0.4, 0.6, 0.8, 1.0};
+    double fixed_speed = 0.2;
+    double fixed_tau = 2.0;
+
+    // Vary persistence time, fixed speed
+    std::ofstream out1("../output/diffusion_vs_tau.txt");
+    out1 << "tau D\n";
+    for (double tau : values_persistence_time) {
+        double D = calculateDiffusionCoef(10, tau, fixed_speed);
+        out1 << tau << " " << D << "\n";
+    }
+    out1.close();
+
+    // Vary speed, fixed persistence time
+    std::ofstream out2("../output/diffusion_vs_speed.txt");
+    out2 << "speed D\n";
+    for (double v : values_speed) {
+        double D = calculateDiffusionCoef(10, fixed_tau, v);
+        out2 << v << " " << D << "\n";
+    }
+    out2.close();
+
+    // Run the plot script
+    int plot = system("python3 ../script/plot_diffCoeff.py");
+    if (plot != 0) {
+        std::cerr << "Error: Python script failed to run.\n";
+    }
+
     /*
     //num_cells consist of num_best and num_good
     std::vector<std::pair<int,int>> num_cells = {
