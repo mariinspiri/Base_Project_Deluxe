@@ -14,15 +14,19 @@ class Agent {
 public:
     Agent(Space *s, geometrycentral::surface::SurfacePoint &initial_position,
             double radius, int agent_id, int agent_type=0, double persistence_period=1e15,
-            double initial_persistence_timer=0.0);
+            double initial_persistence_timer=0.0, bool is_active=true);
 
     // GET methods:
     int getAgentId(){return agent_id;}
     int getAgentType(){return agent_type;}
     double getAgentRadius(){return radius;}
+    bool getIsActive(){return is_active;}
     geometrycentral::Vector2 getLocalVelocity();
     geometrycentral::Vector3 getGlobalVelocity();
     geometrycentral::Vector3 getGlobalPosition();
+
+    //inactivate in case it hits the boarder
+    void deactivate();
 
     void doStep(double dt);
 
@@ -73,6 +77,8 @@ private:
     double persistence_period{1e15};
     double persistence_timer{1.0};
 
+    //as a default agent is activated, once goes over the boarder gets deactivated
+    bool is_active{true};
     // Ligand-Receptor Dynamics:
     double total_concentration_sum{1e4};
 

@@ -18,7 +18,7 @@ struct VertexHash {
 };
 
 
-Agent::Agent(Space *s, SurfacePoint &initial_position, double agent_radius, int agent_id, int agent_type, double persistence_period, double initial_persistence_timer):
+Agent::Agent(Space *s, SurfacePoint &initial_position, double agent_radius, int agent_id, int agent_type, double persistence_period, double initial_persistence_timer, bool is_active):
     space(s) {
 
     this->persistence_period = persistence_period;
@@ -32,10 +32,13 @@ Agent::Agent(Space *s, SurfacePoint &initial_position, double agent_radius, int 
     }
     this->agent_id = agent_id;
     this->agent_type = agent_type;
-
+    this->is_active= is_active;
     gc_position = initial_position;
 }
-
+//deactivate the agent that hit the border
+void Agent::deactivate(){
+    is_active = false;
+}
 void Agent::doStep(double dt){
     if (getAgentType() == AGENT_TYPE_GOOD_CELL||getAgentType() == AGENT_TYPE_BEST_CELL) {
             move(dt);
@@ -70,6 +73,14 @@ int Agent::move(double dt, bool use_speed, int recursion_index) {
         Vector3 global_position = getGlobalPosition();
 
 
+        //absorbing boundary
+        bool hit_border = (10.0  - global_position[1] <= 1e-12 || global_position[1] <= 1e-12 || 
+            (10.0  - global_position[0] <= 1e-12 || global_position[0] <= 1e-12));
+
+        if(hit_border){
+            deactivate();
+        }
+        /*
         // save the velocity direction before the corrective-shift:
         Vector3 global_vel_direction;
         space->convertLocalVectorToGlobalVector(gc_position, gc_local_velocity_direction, global_vel_direction);
@@ -99,7 +110,7 @@ int Agent::move(double dt, bool use_speed, int recursion_index) {
 
                 space->convertGlobalToLocalVector(gc_position, global_vel_direction, gc_local_velocity_direction);
             }
-            */
+            
         }
 
         // REFLECTIVE BOUNDARY CONDITIONS:
@@ -117,6 +128,7 @@ int Agent::move(double dt, bool use_speed, int recursion_index) {
         // now update the velocity:
         space->convertGlobalVectorToLocalVector(gc_position, global_vel_direction, gc_local_velocity_direction);
         gc_local_velocity_direction = gc_local_velocity_direction.normalize();
+        */
 
         // move for how much is left:
         return move(remaining_length, false, recursion_index+1);
