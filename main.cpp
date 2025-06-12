@@ -108,6 +108,10 @@ float calculateClearanceTime(int num_best_cells, int num_good_cells, int id_sim)
     double lambda  {0.01};   // Reaction/decay rate
     double S_0 {1};         // source intensity (NOTE: in the PDE it should scale with the area e.g. (S_0/Area), so it would be like having S_0=|E|^-1)
 
+    double immigration_rate {0.05}; // rate of recruiting new good cells
+    default_random_engine generator;
+    poisson_distribution<int> poisson_dist(immigration_rate);
+
     // initialize the chemokines' scalar field
     Field chemokines(&space);
     chemokines.setup(dt, D, lambda);
@@ -115,7 +119,59 @@ float calculateClearanceTime(int num_best_cells, int num_good_cells, int id_sim)
 
     int file_index {0};
 
+    // compute all bouandary edges for recruiting new good cells
+    std::vector<Face> boundary_faces;
+    for (Face f : space.gc_mesh->faces()) {
+        for (Edge e : f.adjacentEdges()) {
+            if (e.isBoundary()) {
+                boundary_faces.push_back(f);
+                break;
+            }
+        }
+    }
+
+    uniform_int_distribution<> dist(0, boundary_faces.size() - 1);
+
     for (int i = 0; i < static_cast<int>(T/dt); i++) {
+        //recruit new good cells
+        //-------------
+        int num_new_good_cells = poisson_dist(generator);
+
+        int agent_id_counter = agents.size();
+        double persistence_time {2};
+        double radius_good_cells {0.2};
+        double speed_good_cells {0.2};
+
+        for (int i = 0;i < num_new_good_cells;i++) {
+            // random face, in the center of the triangle:
+            Face face = boundary_faces[dist(space.gen)];
+            SurfacePoint initial_position(face, {1./3., 1./3., 1./3.});
+
+
+            //Face face = space.gc_mesh->face(static_cast<int>(n_of_elements * unif_dist(space.gen)));
+            //SurfacePoint initial_position(face, {1./3., 1./3., 1./3.});
+
+            Agent agent(&space, initial_position, radius_good_cells,
+                                            agent_id_counter,
+                                            AGENT_TYPE_GOOD_CELL,
+                                            persistence_time,
+                                            persistence_time*unif_dist(space.gen),
+                                            true); //initial phase-lag
+            agent.setLocalVelocity({speed_good_cells, 0});
+            agents.push_back(agent);
+            ++agent_id_counter;
+        }
+        CollisionManager collision_manager(&space);
+        {
+            collision_manager.checkCollisions(agents);
+            collision_manager.fixCollisions(agents);
+        }
+
+        // CHECK "COLLISIONS" (INTERACTIONS OF ALL SORTS):
+        collision_manager.checkCollisions(agents);
+        bool agents_list_updated = collision_manager.fixCollisions(agents);
+        //-------------
+
         // shuffle the agents:
         std::shuffle(agents.begin(), agents.end(), space.gen);
 
@@ -124,11 +180,7 @@ float calculateClearanceTime(int num_best_cells, int num_good_cells, int id_sim)
             agent.doStep(dt);
         }
 
-        // CHECK "COLLISIONS" (INTERACTIONS OF ALL SORTS):
-        collision_manager.checkCollisions(agents);
-        bool agents_list_updated = collision_manager.fixCollisions(agents);
-
-        //chack if clearance time was reached
+        //check if clearance time was reached
         int evil_cell_count = 0;
         for(int j = 0; j < agents.size(); j++){
             if(agents[j].getAgentType() == AGENT_TYPE_EVIL_CELL){
@@ -334,7 +386,8 @@ double calculateDiffusionCoef(int num_good_cells, double persistence_time, doubl
 }
 
 int main(int argc, char *argv[]) {
-    /*    
+    /*    compute diffusion coefficient
+    -----------------------------------
     std::vector<double> values_persistence_time = {0.1, 0.5, 1.0, 2.0, 5.0, 10.0};
     std::vector<double> values_speed = {0.05, 0.1, 0.2, 0.4, 0.6, 0.8, 1.0};
     double fixed_speed = 0.2;
@@ -365,7 +418,8 @@ int main(int argc, char *argv[]) {
     }
     */
 
-    
+    //    compute clearance time
+    //-----------------------------------
     //num_cells consist of num_best and num_good
     std::vector<std::pair<int,int>> num_cells = {
         //{0, 10},
