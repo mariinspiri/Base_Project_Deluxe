@@ -50,7 +50,8 @@ float calculateClearanceTime(int num_best_cells, int num_good_cells, int id_sim)
                                             agent_id_counter,
                                             AGENT_TYPE_BEST_CELL,
                                             persistence_best_time,
-                                            persistence_best_time*unif_dist(space.gen)); //initial phase-lag
+                                            persistence_best_time*unif_dist(space.gen),
+                                            true); //initial phase-lag
             agent.setLocalVelocity({speed_best_cells, 0});
             agents.push_back(agent);
             ++agent_id_counter;
@@ -70,7 +71,8 @@ float calculateClearanceTime(int num_best_cells, int num_good_cells, int id_sim)
                                             agent_id_counter,
                                             AGENT_TYPE_GOOD_CELL,
                                             persistence_time,
-                                            persistence_time*unif_dist(space.gen)); //initial phase-lag
+                                            persistence_time*unif_dist(space.gen),
+                                            true); //initial phase-lag
             agent.setLocalVelocity({speed_good_cells, 0});
             agents.push_back(agent);
             ++agent_id_counter;
@@ -99,12 +101,16 @@ float calculateClearanceTime(int num_best_cells, int num_good_cells, int id_sim)
         collision_manager.fixCollisions(agents);
     }
 
-    double T {130};          // minutes
+    double T {20};          // minutes
     double dt {0.1};        // minutes
 
     double D {0.01};        // Diffusion coefficient
     double lambda  {0.01};   // Reaction/decay rate
     double S_0 {1};         // source intensity (NOTE: in the PDE it should scale with the area e.g. (S_0/Area), so it would be like having S_0=|E|^-1)
+
+    double immigration_rate {0.05}; // rate of recruiting new good cells
+    default_random_engine generator;
+    poisson_distribution<int> poisson_dist(immigration_rate);
 
     // initialize the chemokines' scalar field
     Field chemokines(&space);
@@ -113,7 +119,59 @@ float calculateClearanceTime(int num_best_cells, int num_good_cells, int id_sim)
 
     int file_index {0};
 
+    // compute all bouandary edges for recruiting new good cells
+    std::vector<Face> boundary_faces;
+    for (Face f : space.gc_mesh->faces()) {
+        for (Edge e : f.adjacentEdges()) {
+            if (e.isBoundary()) {
+                boundary_faces.push_back(f);
+                break;
+            }
+        }
+    }
+
+    uniform_int_distribution<> dist(0, boundary_faces.size() - 1);
+
     for (int i = 0; i < static_cast<int>(T/dt); i++) {
+        //recruit new good cells
+        //-------------
+        int num_new_good_cells = poisson_dist(generator);
+
+        int agent_id_counter = agents.size();
+        double persistence_time {2};
+        double radius_good_cells {0.2};
+        double speed_good_cells {0.2};
+
+        for (int i = 0;i < num_new_good_cells;i++) {
+            // random face, in the center of the triangle:
+            Face face = boundary_faces[dist(space.gen)];
+            SurfacePoint initial_position(face, {1./3., 1./3., 1./3.});
+
+
+            //Face face = space.gc_mesh->face(static_cast<int>(n_of_elements * unif_dist(space.gen)));
+            //SurfacePoint initial_position(face, {1./3., 1./3., 1./3.});
+
+            Agent agent(&space, initial_position, radius_good_cells,
+                                            agent_id_counter,
+                                            AGENT_TYPE_GOOD_CELL,
+                                            persistence_time,
+                                            persistence_time*unif_dist(space.gen),
+                                            true); //initial phase-lag
+            agent.setLocalVelocity({speed_good_cells, 0});
+            agents.push_back(agent);
+            ++agent_id_counter;
+        }
+        CollisionManager collision_manager(&space);
+        {
+            collision_manager.checkCollisions(agents);
+            collision_manager.fixCollisions(agents);
+        }
+
+        // CHECK "COLLISIONS" (INTERACTIONS OF ALL SORTS):
+        collision_manager.checkCollisions(agents);
+        bool agents_list_updated = collision_manager.fixCollisions(agents);
+        //-------------
+
         // shuffle the agents:
         std::shuffle(agents.begin(), agents.end(), space.gen);
 
@@ -122,11 +180,7 @@ float calculateClearanceTime(int num_best_cells, int num_good_cells, int id_sim)
             agent.doStep(dt);
         }
 
-        // CHECK "COLLISIONS" (INTERACTIONS OF ALL SORTS):
-        collision_manager.checkCollisions(agents);
-        bool agents_list_updated = collision_manager.fixCollisions(agents);
-
-        //chack if clearance time was reached
+        //check if clearance time was reached
         int evil_cell_count = 0;
         for(int j = 0; j < agents.size(); j++){
             if(agents[j].getAgentType() == AGENT_TYPE_EVIL_CELL){
@@ -137,7 +191,7 @@ float calculateClearanceTime(int num_best_cells, int num_good_cells, int id_sim)
             return i*dt;
         }
 
-        cout<<"best:" << num_best_cells << " step:"<<i<<" time:"<<(i*dt)<< " evil_cells: "<< evil_cell_count <<endl;
+        cout<<" time:"<< (i*dt) <<" evil cells: "<< evil_cell_count <<endl;
 
         // UPDATE THE CHEMOKINES:
         // update the source term if some evil cells were actually removed
@@ -209,7 +263,7 @@ double computeDiffusionCoefFromMSD(const std::vector<float>& msd, float dt) {
 }
 
 //compute MSD from simulation
-double calculateDiffusionCoef(int num_good_cells){
+double calculateDiffusionCoef(int num_good_cells, double persistence_time, double speed_good_cells){
     auto time_start = std::chrono::high_resolution_clock::now();
 
     // load mesh and declare space
@@ -228,9 +282,9 @@ double calculateDiffusionCoef(int num_good_cells){
         int agent_id_counter {1};
 
         // initialize good cells:
-        double persistence_time {2};
+        //double persistence_time {2};
         double radius_good_cells {0.2};
-        double speed_good_cells {0.2};
+        //double speed_good_cells {0.2};
 
         for (int i = 0;i < num_good_cells;i++) {
             // random face, in the center of the triangle:
@@ -256,7 +310,7 @@ double calculateDiffusionCoef(int num_good_cells){
         collision_manager.fixCollisions(agents);
     }
 
-    double T {4};          // minutes
+    double T {60};          // minutes
     double dt {0.1};        // minutes
 
     double D {0.01};        // Diffusion coefficient
@@ -325,23 +379,54 @@ double calculateDiffusionCoef(int num_good_cells){
     auto time_duration = std::chrono::duration_cast<std::chrono::milliseconds>(time_end - time_start).count()/1000;
 
     // Print the execution time
-    std::cout << "Execution time: " << time_duration << " s" << std::endl;
+    //std::cout << "Execution time: " << time_duration << " s" << std::endl;
 
     double diffCoeff = computeDiffusionCoefFromMSD(msd, dt);
     return diffCoeff;
 }
 
 int main(int argc, char *argv[]) {
-    double diffCoeff = calculateDiffusionCoef(10);
-    std::cout<<"Diffusion coefficient: "<<diffCoeff<<std::endl;
-    /*
+    /*    compute diffusion coefficient
+    -----------------------------------
+    std::vector<double> values_persistence_time = {0.1, 0.5, 1.0, 2.0, 5.0, 10.0};
+    std::vector<double> values_speed = {0.05, 0.1, 0.2, 0.4, 0.6, 0.8, 1.0};
+    double fixed_speed = 0.2;
+    double fixed_tau = 2.0;
+
+    // Vary persistence time, fixed speed
+    std::ofstream out1("../output/diffusion_vs_tau.txt");
+    out1 << "tau D\n";
+    for (double tau : values_persistence_time) {
+        double D = calculateDiffusionCoef(10, tau, fixed_speed);
+        out1 << tau << " " << D << "\n";
+    }
+    out1.close();
+
+    // Vary speed, fixed persistence time
+    std::ofstream out2("../output/diffusion_vs_speed.txt");
+    out2 << "speed D\n";
+    for (double v : values_speed) {
+        double D = calculateDiffusionCoef(10, fixed_tau, v);
+        out2 << v << " " << D << "\n";
+    }
+    out2.close();
+
+    // Run the plot script
+    int plot = system("python3 ../script/plot_diffCoeff.py");
+    if (plot != 0) {
+        std::cerr << "Error: Python script failed to run.\n";
+    }
+    */
+
+    //    compute clearance time
+    //-----------------------------------
     //num_cells consist of num_best and num_good
     std::vector<std::pair<int,int>> num_cells = {
-        {0, 10},
-        {2, 8},
+        //{0, 10},
+        //{2, 8},
         {5, 5},
-        {8, 2},
-        {10, 0}
+        //{8, 2},
+        //{10, 0}
     };
 
     std::vector<SimulationResult> results;
@@ -349,7 +434,7 @@ int main(int argc, char *argv[]) {
 
     //run simulation several times and get clearance time as a return parameter
     for (const auto& num : num_cells) {
-        for(int i = 0; i < 2; i++){
+        for(int i = 0; i < 1; i++){
             float clearance_time = calculateClearanceTime(num.first, num.second, id_sim);
             results.push_back({id_sim, num.first, num.second, clearance_time});
             id_sim++;
@@ -361,6 +446,6 @@ int main(int argc, char *argv[]) {
     if (plot != 0){
         std::cerr<< "Error: Python script failed to run.\n";
     }
-    */
+    
     return 0;
 }

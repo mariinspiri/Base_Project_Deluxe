@@ -271,3 +271,12 @@ void utils::saveClearanceTimesToFile(const std::vector<SimulationResult>& result
 
     file.close();
 }
+namespace utils {
+    void saveTauAndDiffusionCoeffToFile(const std::vector<double>& values_persistence_times, const std::vector<double>& diffCoeff, const std::string& filename) {
+        std::ofstream out(filename);
+        for (size_t i = 0; i < diffCoeff.size(); ++i) {
+            out << values_persistence_times[i] << " " << diffCoeff[i] << "\n";
+        }
+        out.close();
+    }
+}

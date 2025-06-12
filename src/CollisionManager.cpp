@@ -133,7 +133,12 @@ bool CollisionManager::fixCollisions(std::vector<Agent>& agents) {
             }
         }
     }
-
+    //agents that hit the boardar will be added to the killing list as well
+    for(auto &agent : agents){
+        if(!agent.getIsActive()){
+            agent_index_killing_list.insert(agent.getAgentId());
+        }
+    }
     if (agent_index_killing_list.size() >0) {
         agents.erase(
             std::remove_if(
